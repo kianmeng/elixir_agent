@@ -70,7 +70,7 @@ defmodule NewRelic.DistributedTrace do
   def track_transaction(context, transport_type: type) do
     context
     |> assign_transaction_guid()
-    |> maybe_generate_sampling()
+    |> maybe_generate_sampled_priority()
     |> maybe_generate_trace_id()
     |> report_attributes(transport_type: type)
     |> report_attributes(:w3c)
@@ -78,12 +78,14 @@ defmodule NewRelic.DistributedTrace do
     |> set_tracing_context()
   end
 
-  def maybe_generate_sampling(%Context{sampled: nil, priority: nil} = context) do
+  def maybe_generate_sampled_priority(%Context{sampled: sampled, priority: priority} = context)
+      when is_nil(sampled)
+      when is_nil(priority) do
     {priority, sampled} = generate_sampling()
     %{context | sampled: sampled, priority: priority}
   end
 
-  def maybe_generate_sampling(context), do: context
+  def maybe_generate_sampled_priority(context), do: context
 
   def maybe_generate_trace_id(%Context{trace_id: nil} = context) do
     %{context | trace_id: generate_guid(16)}
